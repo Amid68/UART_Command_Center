@@ -22,8 +22,8 @@
  * to maintain, extend, and integrate with other parts of the application,
  * such as commands, sensors, and lights control.
  * 
- * @author Ameed Othman
- * @date 2024-12-19
+ * Author: Ameed Othman
+ * Date: 2024-12-19
  */
 
 #include <zephyr/kernel.h>
@@ -35,51 +35,28 @@
 #include "uart_handler.h"
 #include "commands.h"
 
-/* 
- * LOG_MODULE_REGISTER allows runtime control of log level.
- * Ensure CONFIG_LOG is enabled in prj.conf.
- */
 LOG_MODULE_REGISTER(menu_core, LOG_LEVEL_INF);
-
-/* 
- * Menu prompt and options: Adjust these strings as needed.
- * You can store them in a separate header or configuration file if desired.
- */
-static const char *main_menu_header =
-	"\r\n"
-	"--------------------------------------\r\n"
-	"        UART Command Center Menu      \r\n"
-	"--------------------------------------\r\n"
-	"[1] Control Lights\r\n"
-	"[2] View Sensor Readings\r\n"
-	"[3] System Configuration\r\n"
-	"[4] Diagnostics and Logs\r\n"
-	"[0] Exit\r\n"
-	"Enter your choice: ";
 
 static const int menu_input_max_len = 32;
 
 /**
  * @brief Display the main menu to the user.
  *
- * This function prints the main menu options to the UART console, inviting
- * the user to select one of the listed choices.
+ * This function now delegates to menu_display_show_main_menu() to print the
+ * main menu options. By centralizing display logic in menu_display.c, we 
+ * maintain cleaner and more maintainable code.
  */
 static void menu_core_display_main_menu(void)
 {
-	uart_handler_write_string(main_menu_header);
+	menu_display_show_main_menu();
 }
 
 /**
  * @brief Process the user's input from the main menu.
  *
- * This function takes the user input string and decides what to do next:
- *   - If '1' is entered, navigate to lights control commands.
- *   - If '2' is entered, display sensor readings.
- *   - If '3' is entered, go to system configuration menu.
- *   - If '4' is entered, show diagnostics/logs.
- *   - If '0' is entered, exit the menu system.
- *   - Otherwise, print an error message and redisplay the menu.
+ * This function takes the user input string and decides what to do next.
+ * If the input is not recognized, it now uses menu_display_error() to
+ * display the error message rather than hard-coding it.
  *
  * @param input A null-terminated string containing the user's choice.
  * @return true if we should continue the menu loop, false if the user requests exit.
@@ -88,22 +65,21 @@ static bool menu_core_handle_input(const char *input)
 {
 	if (strcmp(input, "1") == 0) {
 		uart_handler_write_string("Lights control selected.\r\n");
-        /* Test action: Category 1 for Lights, action_id = 0 as a placeholder */
-         menu_actions_execute(1, 0);
+		menu_actions_execute(1, 0);  /* Example: Lights action */
 	} else if (strcmp(input, "2") == 0) {
 		uart_handler_write_string("Sensor readings selected.\r\n");
-        menu_actions_execute(2, 0); // Category 2 for Sensors, action_id = 0
+		menu_actions_execute(2, 0);  /* Example: Sensor action */
 	} else if (strcmp(input, "3") == 0) {
 		uart_handler_write_string("System configuration selected.\r\n");
-        menu_actions_execute(3, 0);
+		menu_actions_execute(3, 0);  /* Example: System config action */
 	} else if (strcmp(input, "4") == 0) {
 		uart_handler_write_string("Diagnostics and logs selected.\r\n");
-        menu_actions_execute(4, 0);
+		menu_actions_execute(4, 0);  /* Example: Diagnostics action */
 	} else if (strcmp(input, "0") == 0) {
 		uart_handler_write_string("Exiting menu.\r\n");
 		return false;  /* Stop the menu loop */
 	} else {
-		uart_handler_write_string("Invalid choice. Please try again.\r\n");
+		menu_display_error("Invalid choice. Please try again.");
 	}
 
 	return true; /* Continue the menu loop */
@@ -134,7 +110,7 @@ void menu_core_run(void)
 			/* Process the user's input */
 			run = menu_core_handle_input(input_buffer);
 		} else {
-			uart_handler_write_string("Error: Failed to read input.\r\n");
+			menu_display_error("Failed to read input.");
 		}
 
 		/* Optional: small sleep to prevent CPU lock, if desired */
