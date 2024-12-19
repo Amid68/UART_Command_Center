@@ -88,16 +88,17 @@ static bool menu_core_handle_input(const char *input)
 {
 	if (strcmp(input, "1") == 0) {
 		uart_handler_write_string("Lights control selected.\r\n");
-		/* Future: call a function from command_lights.c or commands_core.c */
+        /* Test action: Category 1 for Lights, action_id = 0 as a placeholder */
+         menu_actions_execute(1, 0);
 	} else if (strcmp(input, "2") == 0) {
 		uart_handler_write_string("Sensor readings selected.\r\n");
-		/* Future: call a function from command_sensors.c */
+        menu_actions_execute(2, 0); // Category 2 for Sensors, action_id = 0
 	} else if (strcmp(input, "3") == 0) {
 		uart_handler_write_string("System configuration selected.\r\n");
-		/* Future: call a function from command_system.c */
+        menu_actions_execute(3, 0);
 	} else if (strcmp(input, "4") == 0) {
 		uart_handler_write_string("Diagnostics and logs selected.\r\n");
-		/* Future: call a function from commands_core.c or logger.c */
+        menu_actions_execute(4, 0);
 	} else if (strcmp(input, "0") == 0) {
 		uart_handler_write_string("Exiting menu.\r\n");
 		return false;  /* Stop the menu loop */

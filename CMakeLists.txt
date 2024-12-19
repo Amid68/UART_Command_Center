@@ -8,5 +8,6 @@ project(UART_Command_Center)
 target_sources(app PRIVATE src/main.c
             src/uart_handler.c
             src/menu/menu_core.c
+            src/menu/menu_actions.c
 )
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
