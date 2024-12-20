@@ -12,14 +12,13 @@ target_sources(app PRIVATE
     test_utils.c
 )
 
-# Add the UART handler source file so that its symbols are available during linking
+# Add source files from the application that define tested functions
 target_sources(app PRIVATE
     ../src/uart_handler.c
+    ../src/commands/commands_core.c
+    ../src/commands/command_lights.c
+    ../src/drivers/lights_control.c
 )
 
-# If you have other files containing implementations used by tests, add them as well:
-# target_sources(app PRIVATE ../src/drivers/lights_control.c)
-# target_sources(app PRIVATE ../src/drivers/sensor_readings.c)
-# ... etc.
 
 target_include_directories(app PRIVATE ../include)

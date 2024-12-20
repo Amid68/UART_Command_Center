@@ -100,7 +100,7 @@ static void commands_core_execute_diagnostics(int action_id)
  * @param category The command category (1=Lights, 2=Sensors, 3=System config, 4=Diagnostics)
  * @param action_id The specific action within that category.
  */
-void commands_core_execute(int category, int action_id)
+int commands_core_execute(int category, int action_id)
 {
 	LOG_INF("commands_core_execute: category=%d, action_id=%d", category, action_id);
 
@@ -122,4 +122,6 @@ void commands_core_execute(int category, int action_id)
 		LOG_WRN("Unknown command category: %d", category);
 		break;
 	}
+
+	return 0;
 }

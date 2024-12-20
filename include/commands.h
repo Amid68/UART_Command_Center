@@ -19,7 +19,7 @@ extern "C" {
  * @param category Command category (1=Lights, 2=Sensors, 3=System, 4=Diagnostics)
  * @param action_id Specific action within the category.
  */
-void commands_core_execute(int category, int action_id);
+int commands_core_execute(int category, int action_id);
 
 #ifdef __cplusplus
 }
