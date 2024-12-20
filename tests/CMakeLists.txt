@@ -14,10 +14,11 @@ target_sources(app PRIVATE
 
 # Add source files from the application that define tested functions
 target_sources(app PRIVATE
-    ../src/uart_handler.c
-    ../src/commands/commands_core.c
-    ../src/commands/command_lights.c
-    ../src/drivers/lights_control.c
+        ../src/uart_handler.c
+        ../src/commands/commands_core.c
+        ../src/commands/command_lights.c
+        ../src/drivers/lights_control.c
+        ../src/commands/command_sensors.c
 )
 
 
