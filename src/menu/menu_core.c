@@ -42,6 +42,9 @@ LOG_MODULE_REGISTER(menu_core, LOG_LEVEL_INF);
 
 static const int menu_input_max_len = 32;
 
+static char input_buffer[32];
+static bool run = true;
+
 /**
  * @brief Display the lights sub-menu options to the user.
  *
@@ -102,9 +105,6 @@ static bool menu_core_handle_lights_input(const char *input)
  */
 static void menu_core_run_lights_menu(void)
 {
-	char input_buffer[menu_input_max_len];
-	bool run = true;
-
 	while (run) {
 		menu_core_display_lights_menu();
 
@@ -146,6 +146,8 @@ static bool menu_core_handle_input(const char *input)
 	if (strcmp(input, "1") == 0) {
 		uart_handler_write_string("Lights control selected.\r\n");
 		menu_core_run_lights_menu(); // Enter the lights sub-menu
+		run = true;
+		LOG_INF("Returned from lights sub-menu, now resuming main menu loop...");
 	} else if (strcmp(input, "2") == 0) {
 		uart_handler_write_string("Sensor readings selected.\r\n");
 		menu_actions_execute(2, 0);  // Example: Sensor action
