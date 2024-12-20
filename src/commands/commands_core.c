@@ -9,89 +9,93 @@
  * Description:
  * ------------
  * This file provides a centralized interface for executing commands requested 
- * by the menu system. It ties together the various command implementations 
+ * by the menu system. It ties together various command implementations 
  * (e.g., lights, sensors, system configuration, diagnostics) into a unified 
  * API. By doing this, the menu system and other components can trigger 
  * high-level commands without needing to know the underlying implementation details.
+ *
+ * Changes:
+ * --------
+ * - Removed placeholder messages for lights commands.
+ * - Integrated `command_lights_execute()` for the lights category to leverage real logic.
+ * - For sensors, system, and diagnostics, we now print a "Not implemented yet" message 
+ *   instead of generic placeholders, making it clear that these features are pending.
  * 
- * @author Ameed Othman
- * @date 2024-12-19
+ * With these changes, selecting a lights option should now route through 
+ * `command_lights_execute()` and subsequently `lights_control.c`, displaying 
+ * the messages defined there.
+ * 
+ * Author: Ameed Othman
+ * Date: 2024-12-19
  */
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include "commands.h"         // Public interface for commands (if defined)
-#include "uart_handler.h"     // For sending feedback if needed
+#include "commands.h"
+#include "uart_handler.h"
+#include "command_lights.h"  // Ensure this header provides `command_lights_execute()` prototype
 
 LOG_MODULE_REGISTER(commands_core, LOG_LEVEL_INF);
 
 /**
  * @brief Execute a command for lights control.
  *
- * This function acts as a bridge to the lights command implementation.
- * For now, it may just print a placeholder message. In the future, 
- * it can call functions from "command_lights.c" to perform real actions.
+ * Now we directly call `command_lights_execute()` instead of printing placeholders.
  *
  * @param action_id Identifies which lights action to execute.
  */
 static void commands_core_execute_lights(int action_id)
 {
-	uart_handler_write_string("Executing lights command (placeholder).\r\n");
-	LOG_INF("Lights command executed (ID: %d)", action_id);
-	/* Future: Integrate with command_lights.c functions */
+	LOG_INF("commands_core_execute_lights: action_id=%d", action_id);
+	command_lights_execute(action_id);
 }
 
 /**
  * @brief Execute a command for sensor operations.
  *
- * This function will route sensor-related requests to the appropriate 
- * sensor reading or processing logic.
+ * Since sensor commands are not yet implemented, we clearly state that 
+ * this feature is pending rather than using placeholders.
  *
  * @param action_id Identifies which sensor action to execute.
  */
 static void commands_core_execute_sensors(int action_id)
 {
-	uart_handler_write_string("Executing sensor command (placeholder).\r\n");
-	LOG_INF("Sensor command executed (ID: %d)", action_id);
-	/* Future: Integrate with command_sensors.c functions */
+	uart_handler_write_string("Sensor commands not implemented yet.\r\n");
+	LOG_WRN("Sensor command requested but not implemented. action_id=%d", action_id);
 }
 
 /**
  * @brief Execute a system configuration command.
  *
- * System commands might adjust configuration parameters, calibrate 
- * devices, or change operation modes.
+ * Clearly indicate that system configuration commands are not yet implemented.
  *
  * @param action_id Identifies which system config action to execute.
  */
 static void commands_core_execute_system(int action_id)
 {
-	uart_handler_write_string("Executing system config command (placeholder).\r\n");
-	LOG_INF("System config command executed (ID: %d)", action_id);
-	/* Future: Integrate with command_system.c functions */
+	uart_handler_write_string("System configuration commands not implemented yet.\r\n");
+	LOG_WRN("System config command requested but not implemented. action_id=%d", action_id);
 }
 
 /**
  * @brief Execute a diagnostic or logging command.
  *
- * Diagnostics commands might show logs, memory usage, or other system 
- * stats. This function will route those requests accordingly.
+ * Clearly indicate that diagnostic commands are not yet implemented.
  *
  * @param action_id Identifies which diagnostic action to execute.
  */
 static void commands_core_execute_diagnostics(int action_id)
 {
-	uart_handler_write_string("Executing diagnostics command (placeholder).\r\n");
-	LOG_INF("Diagnostics command executed (ID: %d)", action_id);
-	/* Future: Integrate with diagnostic or logger functions directly */
+	uart_handler_write_string("Diagnostics commands not implemented yet.\r\n");
+	LOG_WRN("Diagnostics command requested but not implemented. action_id=%d", action_id);
 }
 
 /**
  * @brief Public API to execute a command based on a given category and action ID.
  *
- * This function provides a unified entry point for the menu system (or other 
- * parts of the application) to request that a certain command be executed.
+ * Routes the given category and action_id to the appropriate handler function.
+ * Lights commands are fully integrated, while others are pending implementation.
  *
  * @param category The command category (1=Lights, 2=Sensors, 3=System config, 4=Diagnostics)
  * @param action_id The specific action within that category.
