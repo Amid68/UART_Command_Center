@@ -102,24 +102,11 @@ static void menu_actions_diagnostics(int diag_id)
  */
 void menu_actions_execute(int category, int action_id)
 {
-	LOG_INF("Executing menu action: category=%d, action_id=%d", category, action_id);
-
-	switch (category) {
-	case 1: /* Lights */
-		menu_actions_lights_control(action_id);
-		break;
-	case 2: /* Sensors */
-		menu_actions_show_sensor_readings(action_id);
-		break;
-	case 3: /* System Config */
-		menu_actions_system_configuration(action_id);
-		break;
-	case 4: /* Diagnostics */
-		menu_actions_diagnostics(action_id);
-		break;
-	default:
-		uart_handler_write_string("Invalid action category.\r\n");
-		LOG_WRN("Unknown action category: %d", category);
-		break;
-	}
+	LOG_INF("menu_actions_execute: category=%d, action_id=%d", category, action_id);
+	commands_core_execute(category, action_id);
+	/*
+	 * After calling commands_core_execute(), you will see the placeholders
+	 * defined in commands_core.c triggered. This confirms that the command
+	 * execution path is working end-to-end.
+	 */
 }

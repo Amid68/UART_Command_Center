@@ -10,5 +10,6 @@ target_sources(app PRIVATE src/main.c
             src/menu/menu_core.c
             src/menu/menu_actions.c
             src/menu/menu_display.c
+            src/commands/commands_core.c
 )
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

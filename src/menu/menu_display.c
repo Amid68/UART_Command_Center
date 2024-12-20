@@ -39,8 +39,7 @@
 LOG_MODULE_REGISTER(menu_display, LOG_LEVEL_INF);
 
 /* 
- * A header template for the main menu or other menus.
- * You may consider storing various templates or styles here.
+ * A header template for the main menu.
  */
 static const char *main_menu_header =
 	"\r\n"
@@ -51,8 +50,7 @@ static const char *main_menu_header =
 /**
  * @brief Print the main menu options to the user.
  *
- * This function displays a predefined list of menu items. You can easily 
- * modify this to accept parameters or to build menus dynamically in the future.
+ * This function displays a predefined list of menu items.
  */
 void menu_display_show_main_menu(void)
 {
