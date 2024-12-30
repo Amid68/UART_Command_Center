@@ -1,0 +1,27 @@
+/* devicetree.overlay */
+
+/ {
+    /* Path-based override is optional. Usually you can just do &timers3. */
+	soc {
+		timers@40000400 {
+			status = "okay";
+
+			pwm {
+				status = "okay";
+				pinctrl-0 = <&tim3_ch1_pa6>;
+				pinctrl-names = "default";
+			};
+		};
+    };
+};
+
+/* Or using the node label directly: */
+&timers3 {
+    status = "okay";
+
+    pwm {
+        status = "okay";
+        pinctrl-0 = <&tim3_ch1_pa6>;
+        pinctrl-names = "default";
+    };
+};

@@ -4,168 +4,194 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * @file lights_control.c
- * @brief Low-level driver for controlling lights.
- * 
+ * @brief Low-level driver for controlling lights via PWM.
+ *
  * Description:
  * ------------
- * This file implements the low-level driver interface for controlling lights 
- * in the UART Command Center application. It provides functions to turn lights 
- * on/off and adjust brightness levels. The design aims to:
+ * This file implements a driver interface for controlling lights (LEDs) using a
+ * PWM peripheral on the STM32F446RE Nucleo. It references the devicetree overlay
+ * that enables TIM3 Channel 1 on PA6 for PWM output, but now labeled as `timer3:`.
  *
- * - Abstraction: Higher layers (e.g., command_lights.c) do not need hardware details.
- * - Maintainability: Clear, well-structured code with extensive commenting ensures 
- *   that future contributors can easily understand and modify the behavior.
- * - Professional Standards: Following Zephyr best practices, using Zephyr APIs, 
- *   and employing robust logging for debug and traceability.
+ * Key points:
+ *  - The devicetree overlay uses `timer3: timers@40000400`.
+ *  - For brightness, we store an integer (0-100) and compute the duty cycle as
+ *      (brightness/100) * 20,000 microseconds.
+ *  - The code references `DT_NODELABEL(timer3)` to find the PWM device.
  *
- * Current Implementation:
- * -----------------------
- * This initial version implements placeholder logic. Actual hardware integration 
- * (e.g., controlling GPIO pins or PWM for brightness) can be added later.
- * Functions currently return success (0) without performing real hardware actions. 
- * As the project evolves, these placeholders can be replaced with real drivers 
- * or board-specific configurations.
- *
- * Future Improvements:
- * --------------------
- * - Integrate with actual GPIO or PWM drivers for LED control.
- * - Store and validate brightness levels.
- * - Handle error conditions and return meaningful error codes.
- * - Add configuration parameters (e.g., maximum brightness, fade times).
- * 
- * @author Ameed Othman
- * @date 2024-12-20
+ * Author: Ameed Othman
+ * Date: 2024-12-20
  */
 
-#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
 #include <zephyr/logging/log.h>
-#include <lights_control.h>
+#include "lights_control.h"
 
-// If needed, include additional Zephyr headers for GPIO, PWM, or device trees.
-// #include <zephyr/drivers/gpio.h>
-// #include <zephyr/drivers/pwm.h>
-
+/* Logging for debug/tracing. */
 LOG_MODULE_REGISTER(lights_control, LOG_LEVEL_INF);
 
 /*
- * Internal State Variables:
- * -------------------------
- * For demonstration purposes, we maintain a simple internal state of lights:
- *   - on_state: A boolean indicating if the lights are ON (true) or OFF (false).
- *   - brightness: An integer representing the current brightness level (0-100%).
- *
- * These are placeholders and do not reflect actual hardware states yet.
+ * We'll store:
+ *   - pwm_dev:        Pointer to the PWM device (timer3).
+ *   - pwm_period_us:  Period in microseconds (20 kHz = 20,000 µs).
+ *   - brightness:     Current brightness (0..100).
+ *   - on_state:       Whether the lights are currently ON or OFF.
  */
+
+/*
+ * Because our overlay now labels the node as:
+ *    timer3: timers@40000400 { ... };
+ * we use DT_NODELABEL(timer3) here:
+ */
+#define PWM_TIMER3_NODE DT_NODELABEL(timers3)
+
+/* 20 kHz period => 20,000 µs */
+static const uint32_t pwm_period_us = 20000;
+static const struct device *pwm_dev;
 static bool on_state = false;
-static int brightness = 50; // Start at 50% brightness as a default placeholder
+static int brightness = 50;
 
 /**
- * @brief Initialize the lights subsystem.
- *
- * In a real scenario, this might configure GPIO pins, PWM channels,
- * or other hardware resources. For now, it's a no-op returning success.
- *
- * @return 0 on success, or a negative error code on failure.
+ * @brief Initialize the lights subsystem by retrieving the PWM device.
  */
 int lights_control_init(void)
 {
-	// Placeholder: If hardware initialization is needed, perform it here.
-	LOG_INF("Lights control initialized with default brightness: %d%%", brightness);
-	return 0;
+    /* Look up the device pointer for `timer3:` */
+    pwm_dev = DEVICE_DT_GET(PWM_TIMER3_NODE);
+    if (!device_is_ready(pwm_dev)) {
+        LOG_ERR("timer3 not ready for PWM!");
+        return -ENODEV;
+    }
+
+    on_state = false;
+    brightness = 50;
+    LOG_INF("lights_control_init: Using timer3 at 20 kHz, default brightness=%d%%", brightness);
+    return 0;
 }
 
 /**
- * @brief Turn the lights ON.
- *
- * Placeholder logic sets the on_state to true. In the future, this might 
- * toggle a GPIO pin or enable a PWM signal.
- *
- * @return 0 on success, or a negative error code on failure.
+ * @brief Turn the lights ON at the stored brightness.
  */
 int lights_control_turn_on(void)
 {
-	on_state = true;
-	LOG_INF("Lights turned ON (placeholder)");
-	return 0;
+    on_state = true;
+
+    if (brightness == 0) {
+        brightness = 50;
+        LOG_INF("Brightness was 0%%; setting to default 50%% on turn_on()");
+    }
+
+    /* Compute duty cycle in microseconds: (brightness / 100) * 20000 */
+    uint32_t duty_us = (brightness * pwm_period_us) / 100U;
+
+    int ret = pwm_set(pwm_dev, 1 /* channel */,
+                      PWM_USEC(pwm_period_us),
+                      PWM_USEC(duty_us),
+                      PWM_POLARITY_NORMAL);
+    if (ret < 0) {
+        LOG_ERR("Failed to set PWM ON, ret=%d", ret);
+        return ret;
+    }
+
+    LOG_INF("Lights turned ON. brightness=%d%% => duty=%u us", brightness, duty_us);
+    return 0;
 }
 
 /**
- * @brief Turn the lights OFF.
- *
- * Placeholder logic sets the on_state to false.
- *
- * @return 0 on success, or a negative error code on failure.
+ * @brief Turn the lights OFF by setting duty cycle = 0.
  */
 int lights_control_turn_off(void)
 {
-	on_state = false;
-	LOG_INF("Lights turned OFF (placeholder)");
-	return 0;
+    on_state = false;
+
+    int ret = pwm_set(pwm_dev, 1 /* channel */,
+                      PWM_USEC(pwm_period_us),
+                      PWM_USEC(0),
+                      PWM_POLARITY_NORMAL);
+    if (ret < 0) {
+        LOG_ERR("Failed to set PWM OFF, ret=%d", ret);
+        return ret;
+    }
+
+    LOG_INF("Lights turned OFF, channel=1");
+    return 0;
 }
 
 /**
- * @brief Increase the brightness level.
- *
- * This function increments the brightness by a fixed step (e.g., 10%), 
- * ensuring it does not exceed 100%. In real hardware, it would adjust a PWM duty cycle.
- *
- * @return 0 on success, or a negative error code on failure.
+ * @brief Increase brightness by 10% steps up to 100%.
  */
 int lights_control_increase_brightness(void)
 {
-	if (brightness <= 90) {
-		brightness += 10;
-		LOG_INF("Brightness increased to %d%% (placeholder)", brightness);
-	} else {
-		brightness = 100;
-		LOG_INF("Brightness is already at maximum (100%%).");
-	}
+    if (brightness <= 90) {
+        brightness += 10;
+    } else {
+        brightness = 100;
+        LOG_INF("Brightness is already at max (100%%).");
+    }
 
-	return 0;
+    if (!on_state) {
+        LOG_INF("Lights OFF; storing brightness=%d%% without enabling LED", brightness);
+        return 0;
+    }
+
+    uint32_t duty_us = (brightness * pwm_period_us) / 100U;
+    int ret = pwm_set(pwm_dev, 1 /* channel */,
+                      PWM_USEC(pwm_period_us),
+                      PWM_USEC(duty_us),
+                      PWM_POLARITY_NORMAL);
+    if (ret < 0) {
+        LOG_ERR("Failed to increase brightness, ret=%d", ret);
+        return ret;
+    }
+
+    LOG_INF("Brightness increased to %d%% => duty=%u us", brightness, duty_us);
+    return 0;
 }
 
 /**
- * @brief Decrease the brightness level.
- *
- * This function decreases the brightness by a fixed step (e.g., 10%), 
- * ensuring it does not go below 0%. In a real scenario, it would lower the PWM duty cycle.
- *
- * @return 0 on success, or a negative error code on failure.
+ * @brief Decrease brightness by 10% steps down to 0%.
  */
 int lights_control_decrease_brightness(void)
 {
-	if (brightness >= 10) {
-		brightness -= 10;
-		LOG_INF("Brightness decreased to %d%% (placeholder)", brightness);
-	} else {
-		brightness = 0;
-		LOG_INF("Brightness is already at minimum (0%%).");
-	}
+    if (brightness >= 10) {
+        brightness -= 10;
+    } else {
+        brightness = 0;
+        LOG_INF("Brightness is already at min (0%%).");
+    }
 
-	return 0;
+    if (!on_state) {
+        LOG_INF("Lights OFF; storing brightness=%d%% without enabling LED", brightness);
+        return 0;
+    }
+
+    uint32_t duty_us = (brightness * pwm_period_us) / 100U;
+    int ret = pwm_set(pwm_dev, 1 /* channel */,
+                      PWM_USEC(pwm_period_us),
+                      PWM_USEC(duty_us),
+                      PWM_POLARITY_NORMAL);
+    if (ret < 0) {
+        LOG_ERR("Failed to decrease brightness, ret=%d", ret);
+        return ret;
+    }
+
+    LOG_INF("Brightness decreased to %d%% => duty=%u us", brightness, duty_us);
+    return 0;
 }
 
 /**
- * @brief Get the current lights state.
- *
- * Allows other parts of the application to query whether the lights are ON or OFF, 
- * and what the current brightness level is.
- *
- * @param state Pointer to a bool that will receive the ON/OFF state.
- * @param level Pointer to an int that will receive the brightness level.
- *
- * @return 0 on success, or a negative error code on failure.
+ * @brief Retrieve current lights state (ON/OFF) and brightness (0..100).
  */
 int lights_control_get_state(bool *state, int *level)
 {
-	if (!state || !level) {
-		LOG_ERR("lights_control_get_state: Invalid parameters");
-		return -EINVAL;
-	}
+    if (!state || !level) {
+        LOG_ERR("lights_control_get_state: Invalid pointers");
+        return -EINVAL;
+    }
 
-	*state = on_state;
-	*level = brightness;
-	LOG_INF("Queried lights state: ON=%d, Brightness=%d%%", on_state, brightness);
-
-	return 0;
+    *state = on_state;
+    *level = brightness;
+    LOG_INF("Queried lights state: on_state=%d, brightness=%d%%", on_state, brightness);
+    return 0;
 }
