@@ -25,3 +25,9 @@
         pinctrl-names = "default";
     };
 };
+
+&adc1 {
+    status = "okay";
+    pinctrl-0 = <&adc1_in0_pa0>;
+    pinctrl-names = "default";
+};
