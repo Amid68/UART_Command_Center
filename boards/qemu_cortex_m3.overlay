@@ -1,0 +1,6 @@
+&{/soc} {
+    fake_tim3: timers3 {
+        compatible = "test-fake-pwm";
+        status = "okay";
+    };
+};
